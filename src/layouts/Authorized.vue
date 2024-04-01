@@ -12,14 +12,14 @@ import DefaultView from "./components/View.vue";
 import DefaultBar from "./components/AppBar.vue";
 
 import {onMounted} from "vue";
-import {WilfordInfo} from "@/scripts/wilford";
+import {ClientInfo} from "@/scripts/oauth";
 
 onMounted(async () => {
     await checkLogin();
 })
 
 async function checkLogin() {
-    const wilford = await WilfordInfo.getInfo()
+    const wilford = await ClientInfo.getInfo()
     await wilford.checkTokenValidity();
 }
 </script>

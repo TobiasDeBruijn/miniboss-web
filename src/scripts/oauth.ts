@@ -1,20 +1,18 @@
 import {server} from "@/main";
 
-export class WilfordInfo {
-    host: string;
+export class ClientInfo {
     loginRedirect: string;
     clientId: string;
     redirectUri: string;
 
-    constructor(host: string, login_redirect: string, client_id: string, redirect_uri: string) {
-        this.host = host;
+    constructor(login_redirect: string, client_id: string, redirect_uri: string) {
         this.loginRedirect = login_redirect;
         this.clientId = client_id;
         this.redirectUri = redirect_uri;
     }
 
-    static async getInfo(): Promise<WilfordInfo> {
-        const r = await fetch(`${server}/api/v1/wilford`);
+    static async getInfo(): Promise<ClientInfo> {
+        const r = await fetch(`${server}/api/v1/clients/internal`);
         interface Response {
             host: string,
             login_redirect: string,
@@ -23,32 +21,35 @@ export class WilfordInfo {
         }
 
         const j: Response = await r.json();
-        return new WilfordInfo(
-            j.host,
+        return new ClientInfo(
             j.login_redirect,
             j.client_id,
             j.redirect_uri
         )
     }
 
+    getAuthorizationRedirect(manager: boolean = false): string {
+        const scopes = manager ? "miniboss.manager miniboss" : "miniboss";
+        return `${server}/api/v1/oauth/authorize?client_id=${this.clientId}&redirect_uri=${this.redirectUri}&response_type=token&scope=${scopes}`;
+    }
+
     redirectToLogin(manager: boolean = false) {
-        const scopes = manager ? "tenderweave.manager tenderweave" : "tenderweave";
-        window.location.href = `${this.host}/api/oauth/authorize?client_id=${this.clientId}&redirect_uri=${this.redirectUri}&response_type=token&scope=${scopes}`;
+        window.location.href = this.getAuthorizationRedirect(manager);
     }
 
     async checkTokenValidity(manager: boolean = false): Promise<string[]> {
-        if(!window.localStorage.getItem('access_token') || !window.localStorage.getItem('access_token_expiry')) {
+        if(!window.localStorage.getItem('access_token')) {
             this.redirectToLogin(manager);
         }
 
         // Check if the token expires within 5 minutes
-        const expiresAt = Number.parseInt(window.localStorage.getItem('access_token_expiry')!);
-        if(expiresAt - 300 <= (Date.now() / 1000)) {
-            console.log("Token almost expired. Forcing reauthorization");
-            this.redirectToLogin(manager);
-        }
+        // const expiresAt = Number.parseInt(window.localStorage.getItem('access_token_expiry')!);
+        // if(expiresAt - 300 <= (Date.now() / 1000)) {
+        //     console.log("Token almost expired. Forcing reauthorization");
+        //     this.redirectToLogin(manager);
+        // }
 
-        const r = await fetch(`${this.host}/api/v1/auth/token-info`, {
+        const r = await fetch(`${server}/api/v1/oauth/token-info`, {
             headers: {
                 'Authorization': `Bearer ${window.localStorage.getItem('access_token')}`
             }
@@ -66,12 +67,12 @@ export class WilfordInfo {
         const j: Response = await r.json();
         const scopes = j.scope.split(" ");
 
-        if(!scopes.includes("tenderweave")) {
+        if(!scopes.includes("miniboss")) {
             this.redirectToLogin(manager);
             return [];
         }
 
-        if(manager && !scopes.includes("tenderweave.manager")) {
+        if(manager && !scopes.includes("miniboss.manager")) {
             this.redirectToLogin(manager);
             return [];
         }
@@ -87,8 +88,8 @@ export class UserInfo {
         this.name = name;
     }
 
-    static async loadInfo(wilford: WilfordInfo): Promise<UserInfo> {
-        const r = await fetch(`${wilford.host}/api/v1/user/info`, {
+    static async loadInfo(): Promise<UserInfo> {
+        const r = await fetch(`${server}/api/v1/user/info`, {
             headers: {
                 'Authorization': `Bearer ${window.localStorage.getItem('access_token')}`
             }

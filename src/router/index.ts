@@ -6,18 +6,30 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('@/layouts/Default.vue'),
     children: [
       {
-        path: '',
-        component: () => import('@/views/HomeView.vue')
+        path: '/auth/login',
+        component: () => import('@/views/auth/Login.vue')
+      },
+      {
+        path: '/auth/login-ok',
+        component: () => import('@/views/auth/LoginOk.vue')
+      },
+      {
+        path: '/auth/register',
+        component: () => import('@/views/auth/Register.vue')
+      },
+      {
+        path: '/auth/authorize',
+        component: () => import('@/views/auth/Authorize.vue')
       }
     ]
   },
   {
-    path: '/manager',
+    path: '',
     component: () => import('@/layouts/Authorized.vue'),
     children: [
       {
         path: '',
-        component: () => import('@/views/AboutView.vue')
+        component: () => import('@/views/Home.vue')
       }
     ]
   }
